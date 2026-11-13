@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HSB Mobile">
+
+<title>Houghton State Bank Mobile</title>
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22HSB%20Mobile%22,%22short_name%22:%22HSB%22,%22display%22:%22standalone%22}">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<style>
+    :root { 
+        --hsb-blue: #004a99; 
+        --bg-gray: #f4f7f9; 
+    }
+    
+    * { 
+        margin:0; padding:0; box-sizing:border-box; 
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    html { background-color: var(--hsb-blue); }
+    body { background-color: var(--hsb-blue); overflow: hidden; }
+    
+    /* Splash Screen */
+    #splash-screen {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--hsb-blue); z-index: 1000;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        transition: opacity 0.5s ease-out;
+    }
+    .splash-logo { color: white; font-size: 24px; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; text-align: center;}
+    .loader-bar { width: 150px; height: 3px; background: rgba(255,255,255,0.2); border-radius: 2px; position: relative; overflow: hidden; }
+    .loader-progress { position: absolute; width: 40%; height: 100%; background: #ffd700; animation: loading 1.5s infinite; }
+    @keyframes loading { 0% { left: -40%; } 100% { left: 100%; } }
+    .hidden { opacity: 0; pointer-events: none; display: none !important; }
+
+    /* Auth Screen (Login / Register) */
+    #authView {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-gray); z-index: 500;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        padding: 20px; overflow-y: auto;
+    }
+    .auth-card {
+        background: white; width: 100%; max-width: 440px; padding: 30px 25px;
+        border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        max-height: 90vh; overflow-y: auto;
+    }
+    .auth-logo { color: var(--hsb-blue); font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 5px; }
+    .auth-subtitle { color: #666; font-size: 13px; text-align: center; margin-bottom: 20px; }
+    
+    .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+    .tab { flex: 1; text-align: center; padding: 10px; font-weight: 600; font-size: 14px; color: #8e8e93; cursor: pointer; }
+    .tab.active { color: var(--hsb-blue); border-bottom: 2px solid var(--hsb-blue); margin-bottom: -2px; }
+
+    .section-title {
+        font-size: 11px; font-weight: 800; color: var(--hsb-blue);
+        letter-spacing: 0.5px; text-transform: uppercase; margin: 15px 0 10px;
+        border-bottom: 1px dashed #d1d1d6; padding-bottom: 4px;
+    }
+
+    .form-row { display: flex; gap: 10px; }
+    .form-group { margin-bottom: 12px; flex: 1; }
+    .form-label { display: block; font-size: 11px; font-weight: 700; color: #333; margin-bottom: 4px; text-transform: uppercase; }
+    .form-input, .form-select {
+        width: 100%; padding: 10px 12px; border: 1px solid #d1d1d6; border-radius: 8px;
+        font-size: 14px; outline: none; background: #fafafa;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--hsb-blue); background: #fff; }
+
+    .auth-btn {
+        width: 100%; padding: 14px; background: var(--hsb-blue); color: white;
+        border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 15px;
+    }
+    .auth-btn:hover { background: #003366; }
+
+    /* App Wrapper */
+    .app-wrapper { 
+        background-color: var(--bg-gray); height: 100vh; 
+        display: flex; flex-direction: column; overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .header { background-color: var(--hsb-blue); padding: calc(env(safe-area-inset-top) + 10px) 20px 30px; color: white; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .bank-name { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+    
+    .notif-container { position: relative; }
+    .notif-badge { 
+        position: absolute; top: -4px; right: -4px; background: #ff3b30; color: white; 
+        font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; 
+        display: flex; align-items: center; justify-content: center; border: 2px solid var(--hsb-blue);
+    }
+    
+    .user-box { background: rgba(255,255,255,0.12); padding: 12px; border-radius: 8px; border-left: 4px solid #ffd700; }
+    .user-label { font-size: 10px; text-transform: uppercase; opacity: 0.9; font-weight: 600; }
+    .user-name { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+    .balance-card { 
+        background: white; margin: -20px 15px 15px; padding: 22px; 
+        border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); position: relative; z-index: 10;
+    }
+    .acc-type { font-size: 11px; color: #666; font-weight: 700; text-transform: uppercase; }
+    .acc-id { font-size: 14px; color: #333; margin: 4px 0 12px; font-weight: 500; }
+    .big-amount { font-size: 38px; font-weight: 700; color: #1a1a1a; letter-spacing: -1px; }
+    .bal-label { font-size: 12px; color: #8e8e93; margin-bottom: 12px; }
+    .current-bal { font-size: 13px; color: #3a3a3c; border-top: 0.5px solid #eee; padding-top: 12px; }
+
+    .tx-container { background: white; flex: 1; padding-bottom: 120px; }
+    .tx-header { background: #f0f2f5; padding: 10px 20px; font-size: 11px; font-weight: 700; color: #6e6e73; text-transform: uppercase; border-bottom: 0.5px solid #e5e5ea; }
+    .tx-row { display: flex; align-items: center; padding: 15px 20px; border-bottom: 0.5px solid #e5e5ea; cursor: pointer; }
+    .tx-icon-circle-sm { width: 40px; height: 40px; background: #f0f2f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; }
+    .merchant-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 6px; background: #fff; color: #333; font-size: 55%; font-weight: 700; }
+    .merchant-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .tx-info { flex: 1; }
+    .tx-title { font-size: 14px; font-weight: 600; color: #1c1c1e; }
+    .tx-desc { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+    .tx-amt { font-size: 15px; font-weight: 700; color: #000; }
+    .amt-pos { color: #28a745; }
+
+    .nav-bar { 
+        position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px); display: flex; justify-content: space-around; 
+        padding: 10px 0 calc(env(safe-area-inset-bottom) + 10px); border-top: 0.5px solid #d1d1d6; 
+    }
+    .nav-item { text-align: center; color: #8e8e93; font-size: 10px; font-weight: 500; cursor: pointer; }
+    .nav-item.active { color: var(--hsb-blue); }
+    .nav-item .material-icons { display: block; margin-bottom: 3px; font-size: 26px; }
+
+    /* Modales y Vistas Secundarias */
+    .detail-view {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #f4f7f9; z-index: 200; transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        display: flex; flex-direction: column;
+    }
+    .detail-view.active { transform: translateX(0); }
+    .detail-header {
+        background: var(--hsb-blue); color: white; padding: calc(env(safe-area-inset-top) + 15px) 20px 15px;
+        display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .detail-body { padding: 30px 20px; flex: 1; overflow-y: auto; }
+    .recipient-info { margin-bottom: 20px; text-align: center; }
+    .recipient-avatar { width: 60px; height: 60px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 24px; font-weight: bold; color: #555; }
+    .recipient-name { font-weight: 600; font-size: 16px; }
+    .recipient-id { font-size: 14px; color: #666; }
+    .amount-input-container { display: flex; justify-content: center; align-items: baseline; margin-top: 20px; }
+    .currency-symbol { font-size: 48px; font-weight: 300; color: #888; margin-right: 5px; }
+    .amount-input { font-size: 64px; font-weight: 700; border: none; background: transparent; text-align: center; width: 200px; outline: none; color: #1c1c1e; }
+    .error-message { color: #ff3b30; font-size: 12px; height: 15px; margin-top: 5px; text-align: center; }
+    .confirm-btn {
+        margin-top: 20px; padding: 14px 25px; background-color: #28a745; color: white;
+        border: none; border-radius: 25px; font-size: 16px; font-weight: 700; cursor: pointer; width: 90%;
+    }
+    .confirm-btn:disabled { background-color: #6c757d; }
+    .sending-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1); width: 40px; height: 40px;
+        border-radius: 50%; border-left-color: var(--hsb-blue); animation: spin 1s ease infinite; margin: 0 auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Pantalla de Registro / Login Inicial -->
+<div id="authView">
+    <div class="auth-card">
+        <div class="auth-logo">HOUGHTON STATE BANK</div>
+        <div class="auth-subtitle">Online Account Application & Portal</div>
+        
+        <div class="tabs">
+            <div id="tabLogin" class="tab active" onclick="switchAuthTab('login')">Sign In</div>
+            <div id="tabRegister" class="tab" onclick="switchAuthTab('register')">Open Account</div>
+        </div>
+
+        <!-- Formulario de Login -->
+        <div id="loginForm">
+            <div class="form-group">
+                <label class="form-label">Username / User ID</label>
+                <input type="text" id="loginUser" class="form-input" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password / PIN</label>
+                <input type="password" id="loginPass" class="form-input" placeholder="••••••••">
+            </div>
+            <button class="auth-btn" onclick="handleLogin()">Sign In</button>
+        </div>
+
+        <!-- Formulario de Registro Detallado (KYC Realista con Pasaporte) -->
+        <div id="registerForm" style="display: none;">
+            <div class="section-title">1. Personal Details</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" id="regFirstName" class="form-input" placeholder="First Name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" id="regLastName" class="form-input" placeholder="Last Name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" id="regDob" class="form-input">
+            </div>
+
+            <!-- Selección de Documento de Identidad / Pasaporte -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">ID Type</label>
+                    <select id="regDocType" class="form-select" onchange="toggleDocType(this.value)">
+                        <option value="ssn">SSN / National ID</option>
+                        <option value="passport">Passport</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="docLabel">SSN / ID Number</label>
+                    <input type="text" id="regDocNumber" class="form-input" placeholder="XXX-XX-XXXX">
+                </div>
+            </div>
+
+            <!-- Casilla de País Emisor si selecciona Pasaporte -->
+            <div class="form-group" id="passportCountryGroup" style="display: none;">
+                <label class="form-label">Passport Issuing Country</label>
+                <input type="text" id="regPassportCountry" class="form-input" placeholder="e.g. United States, Dominican Republic">
+            </div>
+
+            <div class="section-title">2. Contact & Address</div>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" id="regEmail" class="form-input" placeholder="name@domain.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="regPhone" class="form-input" placeholder="(555) 000-0000">
+            </div>
+
+            <div class="section-title">3. Financial Profile</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Employment Status</label>
+                    <select id="regEmployment" class="form-select">
+                        <option value="Employed">Employed</option>
+                        <option value="Self-Employed">Self-Employed</option>
+                        <option value="Student">Student</option>
+                        <option value="Retired">Retired</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Initial Deposit ($)</label>
+                    <input type="number" id="regInitialDeposit" class="form-input" placeholder="1000.00" value="11000.11">
+                </div>
+            </div>
+
+            <div class="section-title">4. Online Credentials</div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="regUser" class="form-input" placeholder="Choose a username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password / PIN</label>
+                <input type="password" id="regPass" class="form-input" placeholder="Create a secure password">
+            </div>
+
+            <button class="auth-btn" onclick="handleRegister()">Submit Application & Open Account</button>
+        </div>
+        <div id="authError" class="error-message" style="margin-top: 10px;"></div>
+    </div>
+</div>
+
+<!-- Splash Screen -->
+<div id="splash-screen" class="hidden">
+    <div class="splash-logo">HOUGHTON STATE BANK</div>
+    <div class="loader-bar"><div class="loader-progress"></div></div>
+    <div style="color: white; font-size: 10px; margin-top: 15px; opacity: 0.6;">VERIFYING CREDENTIALS...</div>
+</div>
+
+<!-- Dashboard Principal -->
+<div class="app-wrapper" id="mainApp" style="display: none;">
+    <div class="header">
+        <div class="header-top">
+            <span class="material-icons" onclick="logout()" style="cursor: pointer;" title="Logout">logout</span>
+            <div class="bank-name">HOUGHTON STATE BANK</div>
+            <div class="notif-container">
+                <span class="material-icons">notifications_none</span>
+                <span class="notif-badge">1</span>
+            </div>
+        </div>
+        <div class="user-box">
+            <div class="user-label">Primary Account Holder</div>
+            <div class="user-name" id="displayUserName" style="word-wrap: break-word;">TEURY ENMANUEL MICHEL</div>
+        </div>
+    </div>
+
+    <div class="balance-card">
+        <div class="acc-type">Personal Checking</div>
+        <div class="acc-id">Debit Card •••• 4704</div>
+        <div class="big-amount" id="availableBalanceDisplay">$11,000.11</div>
+        <div class="bal-label">Available Balance</div>
+        <div class="current-bal">Current Balance: <span id="currentBalanceDisplay">$11,000.11</span></div>
+    </div>
+
+    <div class="tx-container" id="tx-list"></div>
+
+    <div class="nav-bar">
+        <div class="nav-item active"><span class="material-icons">account_balance</span>Accounts</div>
+        <div class="nav-item" onclick="openTransferView()"><span class="material-icons">swap_horiz</span>Transfer</div>
+        <div class="nav-item" onclick="alert('Deposit feature not implemented.')"><span class="material-icons">file_download</span>Deposit</div>
+        <div class="nav-item" onclick="logout()"><span class="material-icons">logout</span>Exit</div>
+    </div>
+</div>
+
+<!-- Pantalla de Transferencia -->
+<div id="transferView" class="detail-view">
+    <div class="detail-header">
+        <span class="material-icons back-btn" onclick="closeTransferView()">arrow_back</span>
+        <span>Send Money</span>
+        <span style="width: 24px;"></span>
+    </div>
+    <div class="detail-body">
+        <div class="recipient-info">
+            <div class="recipient-avatar">M</div>
+            <div class="recipient-name">M. JOHNSON</div>
+            <div class="recipient-id">$MJohnson8839</div>
+        </div>
+        <div class="amount-input-container">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="transferAmount" class="amount-input" placeholder="0" oninput="validateAmount(this)">
+        </div>
+        <div id="error-message" class="error-message"></div>
+        <div id="button-container" style="text-align: center; margin-top: 20px;">
+            <button id="sendBtn" class="confirm-btn" onclick="initiateTransfer()" disabled>Send</button>
+        </div>
+        <div id="animation-container" style="display: none; text-align: center; margin-top: 20px;">
+            <div class="sending-spinner"></div>
+            <div style="color: #666; margin-top: 10px; font-size: 14px;">Sending...</div>
+        </div>
+        <div id="sent-message" style="display: none; margin-top: 20px; color: #28a745; font-weight: 700; font-size: 16px; align-items: center; justify-content: center;">
+            <span class="material-icons" style="margin-right: 8px;">check_circle</span>
+            <span>Transfer Sent</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const formatCurrency = (num) => '$' + num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    let currentBalance = 11000.11;
+    let ledgerBalance = 11000.11;
+    
+    let transactionsData = [];
+
+    window.onload = function() {
+        const savedUser = localStorage.getItem('hsb_current_user');
+        const savedBalance = localStorage.getItem('hsb_user_balance');
+        
+        if (savedBalance) {
+            currentBalance = parseFloat(savedBalance);
+            ledgerBalance = parseFloat(savedBalance);
+        }
+
+        if (savedUser) {
+            document.getElementById('displayUserName').textContent = savedUser;
+            document.getElementById('authView').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'flex';
+            initDashboard();
+        }
+    };
+
+    function toggleDocType(type) {
+        const label = document.getElementById('docLabel');
+        const input = document.getElementById('regDocNumber');
+        const passportCountryGroup = document.getElementById('passportCountryGroup');
+
+        if (type === 'passport') {
+            label.textContent = 'Passport Number';
+            input.placeholder = 'e.g. A12345678';
+            passportCountryGroup.style.display = 'block';
+        } else {
+            label.textContent = 'SSN / ID Number';
+            input.placeholder = 'XXX-XX-XXXX';
+            passportCountryGroup.style.display = 'none';
+        }
+    }
+
+    function switchAuthTab(tab) {
+        if (tab === 'login') {
+            document.getElementById('tabLogin').classList.add('active');
+            document.getElementById('tabRegister').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        } else {
+            document.getElementById('tabRegister').classList.add('active');
+            document.getElementById('tabLogin').classList.remove('active');
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+        }
+        document.getElementById('authError').textContent = '';
+    }
+
+    function handleRegister() {
+        const firstName = document.getElementById('regFirstName').value.trim();
+        const lastName = document.getElementById('regLastName').value.trim();
+        const dob = document.getElementById('regDob').value;
+        const docType = document.getElementById('regDocType').value;
+        const docNumber = document.getElementById('regDocNumber').value.trim();
+        const passportCountry = document.getElementById('regPassportCountry').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const user = document.getElementById('regUser').value.trim();
+        const pass = document.getElementById('regPass').value.trim();
+        const depositInput = parseFloat(document.getElementById('regInitialDeposit').value);
+
+        const err = document.getElementById('authError');
+
+        if (!firstName || !lastName || !dob || !docNumber || !email || !phone || !user || !pass) {
+            err.textContent = 'Please complete all required fields.';
+            return;
+        }
+
+        if (docType === 'passport' && !passportCountry) {
+            err.textContent = 'Please specify the passport issuing country.';
+            return;
+        }
+
+        const fullName = `${firstName} ${lastName}`.toUpperCase();
+        const initialDeposit = !isNaN(depositInput) && depositInput >= 0 ? depositInput : 11000.11;
+
+        // Guardamos los datos completos en localStorage
+        localStorage.setItem('hsb_reg_fullname', fullName);
+        localStorage.setItem('hsb_reg_user', user);
+        localStorage.setItem('hsb_reg_pass', pass);
+        localStorage.setItem('hsb_reg_doctype', docType);
+        localStorage.setItem('hsb_reg_docnum', docNumber);
+        if (docType === 'passport') {
+            localStorage.setItem('hsb_reg_passport_country', passportCountry);
+        }
+        localStorage.setItem('hsb_user_balance', initialDeposit);
+        localStorage.setItem('hsb_current_user', fullName);
+
+        currentBalance = initialDeposit;
+        ledgerBalance = initialDeposit;
+
+        transitionToApp(fullName);
+    }
+
+    function handleLogin() {
+        const user = document.getElementById('loginUser').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        const err = document.getElementById('authError');
+
+        const regUser = localStorage.getItem('hsb_reg_user');
+        const regPass = localStorage.getItem('hsb_reg_pass');
+        const regName = localStorage.getItem('hsb_reg_fullname') || "TEURY ENMANUEL MICHEL";
+
+        if ((user === regUser && pass === regPass) || (!regUser && user && pass)) {
+            const finalName = regUser ? regName : user.toUpperCase();
+            localStorage.setItem('hsb_current_user', finalName);
+            transitionToApp(finalName);
+        } else {
+            err.textContent = 'Invalid username or password.';
+        }
+    }
+
+    function transitionToApp(userName) {
+        document.getElementById('authView').style.display = 'none';
+        const splash = document.getElementById('splash-screen');
+        splash.classList.remove('hidden');
+
+        setTimeout(() => {
+            splash.classList.add('hidden');
+            document.getElementById('mainApp').style.display = 'flex';
+            document.getElementById('displayUserName').textContent = userName;
+            initDashboard();
+        }, 1500);
+    }
+
+    function logout() {
+        localStorage.removeItem('hsb_current_user');
+        location.reload();
+    }
+
+    function initDashboard() {
+        transactionsData = [
+            { title: 'INITIAL ACCOUNT DEPOSIT', desc: 'Welcome Bonus / Deposit', status: 'Completed', amt: `+${formatCurrency(currentBalance)}`, id: 'DEP9921005', type: 'pos' },
+            { title: 'TEMU.COM INTERNET', desc: 'Online Purchase', status: 'Completed', amt: '-$130.03', id: 'T800944216', type: 'neg' },
+            { title: 'APPLE STORE', desc: 'Card Purchase', status: 'Completed', amt: '-$999.00', id: 'APL-8830112', type: 'neg' }
+        ];
+
+        renderTransactions();
+        updateBalanceDisplays();
+    }
+
+    function updateBalanceDisplays() {
+        document.getElementById('availableBalanceDisplay').textContent = formatCurrency(currentBalance);
+        document.getElementById('currentBalanceDisplay').textContent = formatCurrency(ledgerBalance);
+    }
+
+    function getIconHtml(title, size = '24px') {
+        const t = title.toUpperCase();
+        if (t.includes('TEMU')) return `<span class="merchant-icon" style="width:${size};height:${size};color:#f60;">T<img src="https://www.google.com/s2/favicons?domain=temu.com&sz=128" alt="" onerror="this.remove()"></span>`;
+        if (t.includes('APPLE')) return `<span class="merchant-icon" style="width:${size};height:${size};background:#111;color:#fff;">A<img src="https://www.google.com/s2/favicons?domain=apple.com&sz=128" alt="" onerror="this.remove()"></span>`;
+        return `<span class="material-icons" style="font-size:${size}; color: #28a745;">file_download</span>`;
+    }
+
+    function renderTransactions() {
+        const container = document.getElementById('tx-list');
+        container.innerHTML = '<div class="tx-header">RECENT ACTIVITY</div>';
+        
+        transactionsData.forEach(tx => {
+            const row = document.createElement('div');
+            row.className = 'tx-row';
+            const isPos = tx.type === 'pos';
+            row.innerHTML = `
+                <div class="tx-icon-circle-sm">${getIconHtml(tx.title)}</div>
+                <div class="tx-info">
+                    <div class="tx-title">${tx.title}</div>
+                    <div class="tx-desc">${tx.desc} • ${tx.status}</div>
+                </div>
+                <div class="tx-amt ${isPos ? 'amt-pos' : ''}">${tx.amt}</div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function openTransferView() { document.getElementById('transferView').classList.add('active'); }
+    function closeTransferView() { document.getElementById('transferView').classList.remove('active'); }
+
+    function validateAmount(input) {
+        const amount = parseFloat(input.value);
+        const errorMsg = document.getElementById('error-message');
+        const sendBtn = document.getElementById('sendBtn');
+        if (amount > currentBalance) {
+            errorMsg.textContent = 'Amount exceeds available balance.';
+            sendBtn.disabled = true;
+        } else if (isNaN(amount) || amount <= 0) {
+            errorMsg.textContent = 'Please enter a valid amount.';
+            sendBtn.disabled = true;
+        } else {
+            errorMsg.textContent = '';
+            sendBtn.disabled = false;
+        }
+    }
+
+    function initiateTransfer() {
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        document.getElementById('button-container').style.display = 'none';
+        document.getElementById('animation-container').style.display = 'block';
+
+        setTimeout(() => {
+            currentBalance -= amount;
+            ledgerBalance -= amount;
+            localStorage.setItem('hsb_user_balance', currentBalance);
+            updateBalanceDisplays();
+            
+            document.getElementById('animation-container').style.display = 'none';
+            document.getElementById('sent-message').style.display = 'flex';
+
+            setTimeout(() => {
+                closeTransferView();
+                document.getElementById('button-container').style.display = 'block';
+                document.getElementById('sent-message').style.display = 'none';
+                document.getElementById('transferAmount').value = '';
+            }, 1500);
+        }, 2000);
+    }
+</script>
+
+</body>
+</html>
